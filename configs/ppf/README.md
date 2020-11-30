@@ -1,0 +1,1 @@
+Command to run two_level.py: build/X86/gem5.opt --debug-flags=HWPrefetch configs/learning_gem5/part1/two_level.py
