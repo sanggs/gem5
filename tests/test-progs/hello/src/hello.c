@@ -26,11 +26,47 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdio.h>
+// #include <stdio.h>
 
-int main(int argc, char* argv[])
+// int main(int argc, char* argv[])
+// {
+//     printf("Hello world!\n");
+//     return 0;
+// }
+
+
+#include <cstdio>
+// #include <random>
+// #include <fstream>
+
+int main()
 {
-    printf("Hello world!\n");
+    const int N = 10;
+    double X[N], Y[N], alpha = 0.5;
+    // std::random_device rd; std::mt19937 gen(rd());
+    // std::uniform_real_distribution<> dis(1, 2);
+    for (int i = 0; i < N; ++i)
+    {
+        X[i] = 5;
+        Y[i] = 6;
+    }
+
+    // Start of daxpy loop
+    for (int i = 0; i < N; ++i)
+    {
+        Y[i] = alpha * X[i] + Y[i];
+    }
+    // End of daxpy loop
+
+    double sum = 0;
+    for (int i = 0; i < N; ++i)
+    {
+        sum += Y[i];
+    }
+
+    printf("sum is %lf\n", sum);
     return 0;
 }
+        
+
 

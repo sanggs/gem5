@@ -44,6 +44,7 @@
 #include "mem/cache/prefetch/associative_set.hh"
 #include "mem/cache/prefetch/signature_path.hh"
 #include "mem/packet.hh"
+// #include "perceptron_based.hh"
 
 struct SignaturePathPrefetcherV2Params;
 
@@ -76,6 +77,8 @@ class SignaturePathV2 : public SignaturePath
     void handleSignatureTableMiss(stride_t current_block,
             signature_t &new_signature, double &new_conf,
             stride_t &new_stride) override;
+
+//     PerceptronBased perceptronFilter;
 
     /**
      * In this version of the Signature Path Prefetcher, there is no auxiliary

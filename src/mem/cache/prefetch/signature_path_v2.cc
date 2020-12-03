@@ -43,6 +43,7 @@ SignaturePathV2::SignaturePathV2(const SignaturePathPrefetcherV2Params *p)
                             p->global_history_register_indexing_policy,
                             p->global_history_register_replacement_policy,
                             GlobalHistoryEntry())
+    //   perceptronFilter(p)
 {
 }
 

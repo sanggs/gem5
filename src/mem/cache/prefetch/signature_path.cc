@@ -232,6 +232,10 @@ SignaturePath::calculatePrefetch(const PrefetchInfo &pfi,
     bool is_secure = pfi.isSecure();
     double initial_confidence = 1.0;
 
+    // if (hasBeenPrefetched(request_addr, is_secure)) {
+    //     DPRINTF(HWPrefetch, "This address has been prefetched");
+    // }
+
     // Get the SignatureEntry of this page to:
     // - compute the current stride
     // - obtain the current signature of accesses

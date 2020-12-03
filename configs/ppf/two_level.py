@@ -60,7 +60,7 @@ isa = str(m5.defines.buildEnv['TARGET_ISA']).lower()
 # grab the specific path to the binary
 thispath = os.path.dirname(os.path.realpath(__file__))
 binary = os.path.join(thispath, '../../',
-                      'tests/test-progs/hello/bin/', isa, 'linux/hello')
+                      'tests/test-progs/hello/bin/', isa, 'linux/hello_daxpy')
 
 # Check if there was a binary passed in via the command line and error if
 # there are too many arguments
@@ -111,7 +111,8 @@ system.membus = SystemXBar()
 system.l2cache.connectMemSideBus(system.membus)
 
 # Initialise perceptron based prefetch filter.
-system.l2cache.prefetcher = PerceptronBasedPrefetcher()
+system.l2cache.prefetcher = SignaturePathPrefetcherV2()
+system.l2cache.prefetch_on_access = True
 
 # create the interrupt controller for the CPU
 system.cpu.createInterruptController()
