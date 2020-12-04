@@ -257,29 +257,6 @@ class SignaturePathPrefetcher(QueuedPrefetcher):
         "Minimum confidence to issue prefetches")
     lookahead_confidence_threshold = Param.Float(0.75,
         "Minimum confidence to continue exploring lookahead entries")
-
-class SignaturePathPrefetcherV2(SignaturePathPrefetcher):
-    type = 'SignaturePathPrefetcherV2'
-    cxx_class = 'Prefetcher::SignaturePathV2'
-    cxx_header = "mem/cache/prefetch/signature_path_v2.hh"
-
-    signature_table_entries = "256"
-    signature_table_assoc = 1
-    pattern_table_entries = "512"
-    pattern_table_assoc = 1
-    num_counter_bits = 4
-    prefetch_confidence_threshold = 0.25
-    lookahead_confidence_threshold = 0.25
-
-    global_history_register_entries = Param.MemorySize("8",
-        "Number of entries of global history register")
-    global_history_register_indexing_policy = Param.BaseIndexingPolicy(
-        SetAssociative(entry_size = 1,
-        assoc = Parent.global_history_register_entries,
-        size = Parent.global_history_register_entries),
-        "Indexing policy of the global history register")
-    global_history_register_replacement_policy = Param.BaseReplacementPolicy(
-        LRURP(), "Replacement policy of the global history register")
     
     prefetch_filter_threshold = Param.UInt16(25,
         "Threshold for prefetch filter");
@@ -308,6 +285,29 @@ class SignaturePathPrefetcherV2(SignaturePathPrefetcher):
     reject_table_replacement_policy = Param.BaseReplacementPolicy(LRURP(),
         "Replacement policy of the reject table")
 
+
+class SignaturePathPrefetcherV2(SignaturePathPrefetcher):
+    type = 'SignaturePathPrefetcherV2'
+    cxx_class = 'Prefetcher::SignaturePathV2'
+    cxx_header = "mem/cache/prefetch/signature_path_v2.hh"
+
+    signature_table_entries = "256"
+    signature_table_assoc = 1
+    pattern_table_entries = "512"
+    pattern_table_assoc = 1
+    num_counter_bits = 4
+    prefetch_confidence_threshold = 0.25
+    lookahead_confidence_threshold = 0.25
+
+    global_history_register_entries = Param.MemorySize("8",
+        "Number of entries of global history register")
+    global_history_register_indexing_policy = Param.BaseIndexingPolicy(
+        SetAssociative(entry_size = 1,
+        assoc = Parent.global_history_register_entries,
+        size = Parent.global_history_register_entries),
+        "Indexing policy of the global history register")
+    global_history_register_replacement_policy = Param.BaseReplacementPolicy(
+        LRURP(), "Replacement policy of the global history register")
 
 class AccessMapPatternMatching(ClockedObject):
     type = 'AccessMapPatternMatching'

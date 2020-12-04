@@ -44,7 +44,7 @@
 #include "mem/cache/prefetch/associative_set.hh"
 #include "mem/packet.hh"
 
-struct SignaturePathPrefetcherV2Params;
+struct SignaturePathPrefetcherParams;
 
 namespace Prefetcher {
 
@@ -72,8 +72,6 @@ class PerceptronBased
       const double mConfidence;
       /*Current Signature*/
       const signature_t mCurrentSignature;
-      /*Valid bit*/
-      bool valid;
 
       PrefetchEntry() 
         : mPAddr(0), 
@@ -81,10 +79,7 @@ class PerceptronBased
           mPPN(0), 
           mStride(0), 
           mConfidence(0), 
-          mCurrentSignature(0),
-          valid(0) {
-
-          }
+          mCurrentSignature(0) {}
 
       PrefetchEntry(Addr addr, Addr pc, Addr ppn, stride_t stride, double confidence, signature_t sig) 
         : mPAddr(addr), 
@@ -92,10 +87,7 @@ class PerceptronBased
           mPPN(ppn), 
           mStride(stride), 
           mConfidence(confidence), 
-          mCurrentSignature(sig),
-          valid(1) {
-
-          }
+          mCurrentSignature(sig) {}
     };
     AssociativeSet<PrefetchEntry> prefetchTable;
     
@@ -112,8 +104,6 @@ class PerceptronBased
       const double mConfidence;
       /*Current Signature*/
       const signature_t mCurrentSignature;
-      /*Valid bit*/
-      bool valid;
 
       RejectEntry() 
         : mPAddr(0), 
@@ -121,10 +111,7 @@ class PerceptronBased
           mPPN(0), 
           mStride(0), 
           mConfidence(0), 
-          mCurrentSignature(0),
-          valid(0) {
-
-          }
+          mCurrentSignature(0) {}
 
       RejectEntry(Addr addr, Addr pc, Addr ppn, stride_t stride, double confidence, signature_t sig) 
         : mPAddr(addr), 
@@ -132,10 +119,7 @@ class PerceptronBased
           mPPN(ppn), 
           mStride(stride), 
           mConfidence(confidence), 
-          mCurrentSignature(sig),
-          valid(0) {
-            
-          }
+          mCurrentSignature(sig) {}
     };
     AssociativeSet<RejectEntry> rejectTable;
 
@@ -149,11 +133,38 @@ class PerceptronBased
 
     struct PrefetcherWeightTable {
       std::vector<FeatureWeights> featureTables;
+      int numFeatures;
 
       PrefetcherWeightTable() {
-        featureTables.reserve(8); // Using 8 features instead of 9 since prev 3 PCs not available
+        numFeatures = 7;
+        featureTables.reserve(numFeatures); // Using 8 features instead of 9 since prev 3 PCs not available
+
+        /**
+         * featureTables[0] = Confidence XOR Page addr
+         * featureTables[1] = Cache line
+         * featureTables[2] = Page addr
+         * featureTables[3] = Base addr
+         * featureTables[4] = Confidence
+         * featureTables[5] = Signature XOR Delta
+         * featureTables[6] = PC XOR Delta
+         * */
 
         // TODO: Reserve space for weights
+        for (int i = 0; i < numFeatures; i++) {
+          if (i < 4)
+            featureTables[i].weights.reserve(4096);
+          else if (i == 4)
+            featureTables[i].weights.reserve(2048);
+          else if (i == 5)
+            featureTables[i].weights.reserve(1024);
+          else 
+            featureTables[i].weights.reserve(128);
+        
+          for(int j = 0; j < featureTables[i].weights.size(); j++) {
+            featureTables[i].weights[i] = SatCounter(5, 1);
+          }
+        
+        }
 
       }
 
@@ -161,10 +172,23 @@ class PerceptronBased
     PrefetcherWeightTable ppf;
 
     const uint32_t threshold;
+    unsigned blkSize;
+    Addr pageBytes;
+
+    int computeWeightSum(Addr addr, Addr pc, Addr ppn, stride_t stride, double confidence, signature_t sig);
+
+    void getIndices(Addr addr, Addr pc, Addr ppn, stride_t stride, double confidence, signature_t sig, std::vector<int> &indices);
 
   public:
-    PerceptronBased(const SignaturePathPrefetcherV2Params* p);
+    PerceptronBased(const SignaturePathPrefetcherParams* p);
     ~PerceptronBased() = default;
+
+    void setPageBytes(Addr pb) { pageBytes = pb; }
+
+    bool infer(Addr addr, Addr pc, Addr ppn, stride_t stride, double confidence, signature_t sig);
+
+    void train(Addr addr, Addr pc, Addr ppn, stride_t stride, double confidence, signature_t sig);
+
 };
 
 } // namespace Prefetcher
