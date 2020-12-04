@@ -77,12 +77,13 @@ class SignaturePathV2 : public SignaturePath
             signature_t &new_signature, double &new_conf,
             stride_t &new_stride) override;
 
+
     /**
      * In this version of the Signature Path Prefetcher, there is no auxiliary
      * prefetcher, so this function does not perform any actions.
      */
     void auxiliaryPrefetcher(Addr ppn, stride_t current_block, bool is_secure,
-            std::vector<AddrPriority> &addresses) override
+            std::vector<AddrPriority> &addresses, Addr pc) override
     {}
 
     virtual void handlePageCrossingLookahead(signature_t signature,

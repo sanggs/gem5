@@ -44,6 +44,7 @@
 #include "mem/cache/prefetch/associative_set.hh"
 #include "mem/cache/prefetch/queued.hh"
 #include "mem/packet.hh"
+#include "perceptron_based.hh"
 
 struct SignaturePathPrefetcherParams;
 
@@ -175,7 +176,7 @@ class SignaturePath : public Queued
     void addPrefetch(Addr ppn, stride_t last_block, stride_t delta,
                           double path_confidence, signature_t signature,
                           bool is_secure,
-                          std::vector<AddrPriority> &addresses);
+                          std::vector<AddrPriority> &addresses, Addr pc);
 
     /**
      * Obtains the SignatureEntry of the given page, if the page is not found,
@@ -260,7 +261,7 @@ class SignaturePath : public Queued
      *        their filter has been updated, if this call updates a new entry
      */
     virtual void auxiliaryPrefetcher(Addr ppn, stride_t current_block,
-            bool is_secure, std::vector<AddrPriority> &addresses);
+            bool is_secure, std::vector<AddrPriority> &addresses, Addr pc);
 
     /**
      * Handles the situation when the lookahead process has crossed the
@@ -277,6 +278,8 @@ class SignaturePath : public Queued
     virtual void handlePageCrossingLookahead(signature_t signature,
             stride_t last_offset, stride_t delta, double path_confidence) {
     }
+
+    PerceptronBased perceptronFilter;
 
   public:
     SignaturePath(const SignaturePathPrefetcherParams* p);

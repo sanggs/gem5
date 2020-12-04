@@ -50,7 +50,8 @@ SignaturePath::SignaturePath(const SignaturePathPrefetcherParams *p)
       patternTable(p->pattern_table_assoc, p->pattern_table_entries,
                    p->pattern_table_indexing_policy,
                    p->pattern_table_replacement_policy,
-                   PatternEntry(stridesPerPatternEntry, p->num_counter_bits))
+                   PatternEntry(stridesPerPatternEntry, p->num_counter_bits)),
+      perceptronFilter(p)
 {
     fatal_if(prefetchConfidenceThreshold < 0,
         "The prefetch confidence threshold must be greater than 0\n");
@@ -60,6 +61,9 @@ SignaturePath::SignaturePath(const SignaturePathPrefetcherParams *p)
         "The lookahead confidence threshold must be greater than 0\n");
     fatal_if(lookaheadConfidenceThreshold > 1,
         "The lookahead confidence threshold must be less than 1\n");
+    std::cout << "Before setting PPF pageBytes" << std::endl;
+    perceptronFilter.setPageBytes(pageBytes);
+    std::cout << "After setting PPF pageBytes" << std::endl;
 }
 
 SignaturePath::PatternStrideEntry &
@@ -92,7 +96,7 @@ SignaturePath::PatternEntry::getStrideEntry(stride_t stride)
 void
 SignaturePath::addPrefetch(Addr ppn, stride_t last_block,
     stride_t delta, double path_confidence, signature_t signature,
-    bool is_secure, std::vector<AddrPriority> &addresses)
+    bool is_secure, std::vector<AddrPriority> &addresses, Addr pc)
 {
     stride_t block = last_block + delta;
 
@@ -126,8 +130,10 @@ SignaturePath::addPrefetch(Addr ppn, stride_t last_block,
     Addr new_addr = pf_ppn * pageBytes;
     new_addr += pf_block * (Addr)blkSize;
 
-    DPRINTF(HWPrefetch, "Queuing prefetch to %#x.\n", new_addr);
-    addresses.push_back(AddrPriority(new_addr, 0));
+    if (perceptronFilter.infer(new_addr, pc, pf_ppn, delta, path_confidence, signature)) {
+        DPRINTF(HWPrefetch, "Queuing prefetch to %#x.\n", new_addr);
+        addresses.push_back(AddrPriority(new_addr, 0));
+    }
 }
 
 void
@@ -231,6 +237,11 @@ SignaturePath::calculatePrefetch(const PrefetchInfo &pfi,
     stride_t stride;
     bool is_secure = pfi.isSecure();
     double initial_confidence = 1.0;
+    Addr pc = pfi.getPC();
+
+    if (hasBeenPrefetched(request_addr, is_secure)) {
+        DPRINTF(HWPrefetch, "This address has been prefetched");
+    }
 
     // Get the SignatureEntry of this page to:
     // - compute the current stride
@@ -283,10 +294,11 @@ SignaturePath::calculatePrefetch(const PrefetchInfo &pfi,
 
                 if (prefetch_confidence >= prefetchConfidenceThreshold) {
                     assert(entry.stride != 0);
+
                     //prefetch candidate
                     addPrefetch(ppn, current_stride, entry.stride,
                                 current_confidence, current_signature,
-                                is_secure, addresses);
+                                is_secure, addresses, pc);
                 }
             }
         }
@@ -302,17 +314,17 @@ SignaturePath::calculatePrefetch(const PrefetchInfo &pfi,
         }
     }
 
-    auxiliaryPrefetcher(ppn, current_block, is_secure, addresses);
+    auxiliaryPrefetcher(ppn, current_block, is_secure, addresses, pc);
 }
 
 void
 SignaturePath::auxiliaryPrefetcher(Addr ppn, stride_t current_block,
-        bool is_secure, std::vector<AddrPriority> &addresses)
+        bool is_secure, std::vector<AddrPriority> &addresses, Addr pc)
 {
     if (addresses.empty()) {
         // Enable the next line prefetcher if no prefetch candidates are found
         addPrefetch(ppn, current_block, 1, 0.0 /* unused*/, 0 /* unused */,
-                    is_secure, addresses);
+                    is_secure, addresses, pc);
     }
 }
 
