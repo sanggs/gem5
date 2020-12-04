@@ -91,12 +91,13 @@ bool PerceptronBased::infer(Addr addr, Addr pc, Addr ppn, stride_t stride, doubl
         if (result >= threshold) {
                 PrefetchEntry *p = prefetchTable.findVictim(addr);
                 prefetchTable.insertEntry(addr, true, p);
+                return true;
         }
         else {
                 RejectEntry *p = rejectTable.findVictim(addr);
                 rejectTable.insertEntry(addr, true, p);
         }
-        return true;
+        return false;
 }
 
 void PerceptronBased::train(Addr addr, Addr pc, Addr ppn, stride_t stride, double confidence, signature_t sig) {
