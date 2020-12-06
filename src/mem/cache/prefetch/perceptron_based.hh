@@ -40,6 +40,7 @@
 #ifndef __MEM_CACHE_PREFETCH_PERCEPTRON_BASED_HH__
 #define __MEM_CACHE_PREFETCH_PERCEPTRON_BASED_HH__
 
+#include "base/statistics.hh"
 #include "base/sat_counter.hh"
 #include "mem/cache/prefetch/associative_set.hh"
 #include "mem/packet.hh"
@@ -61,17 +62,17 @@ class PerceptronBased
     /*Entry in the prefetch table*/
     struct PrefetchEntry : public TaggedEntry {
       /*Physical address*/
-      const Addr mPAddr;
+      Addr mPAddr;
       /*PC*/
-      const Addr mPC;
+      Addr mPC;
       /*Page number*/
-      const Addr mPPN;
+      Addr mPPN;
       /*Delta*/
-      const stride_t mStride;
+      stride_t mStride;
       /*Confidence*/
-      const double mConfidence;
+      double mConfidence;
       /*Current Signature*/
-      const signature_t mCurrentSignature;
+      signature_t mCurrentSignature;
 
       PrefetchEntry() 
         : mPAddr(0), 
@@ -93,17 +94,17 @@ class PerceptronBased
     
     struct RejectEntry : public TaggedEntry {
       /*Physical address*/
-      const Addr mPAddr;
+      Addr mPAddr;
       /*PC*/
-      const Addr mPC;
+      Addr mPC;
       /*Page number*/
-      const Addr mPPN;
+      Addr mPPN;
       /*Delta*/
-      const stride_t mStride;
+      stride_t mStride;
       /*Confidence*/
-      const double mConfidence;
+      double mConfidence;
       /*Current Signature*/
-      const signature_t mCurrentSignature;
+      signature_t mCurrentSignature;
 
       RejectEntry() 
         : mPAddr(0), 
@@ -126,22 +127,23 @@ class PerceptronBased
     RejectEntry *findEntryInRejectTable(Addr addr, Addr pc, Addr ppn, stride_t stride, double confidence, signature_t sig)
         {
             RejectEntry *found_entry = nullptr;
-            for (auto &entry : rejectTable) {
-                if (entry.mPAddr == addr && entry.mPC == pc && entry.mPPN==ppn && entry.mStride == stride && entry.mConfidence == confidence && entry.mCurrentSignature == sig) {
-                    found_entry = &entry;
-                    break;
-                }
-            }
+            std::cout << "Searching for : " << addr << " " << pc << " " << ppn << " " << stride << " " << confidence << " " << std::endl;
+            found_entry = rejectTable.findEntry(addr, true);
             return found_entry;
         }
 
     PrefetchEntry *findEntryInPrefetchTable(Addr addr, Addr pc, Addr ppn, stride_t stride, double confidence, signature_t sig)
         {
             PrefetchEntry *found_entry = nullptr;
+            std::cout << "Searching for : " << addr << " " << pc << " " << ppn << " " << stride << " " << confidence << " " << std::endl;
             for (auto &entry : prefetchTable) {
-                if (entry.mPAddr == addr && entry.mPC == pc && entry.mPPN==ppn && entry.mStride == stride && entry.mConfidence == confidence && entry.mCurrentSignature == sig) {
+                if (entry.mPAddr == addr && entry.mPC == pc && entry.mPPN==ppn && entry.mStride == stride && entry.mConfidence == confidence) {
+                    std::cout << "Found entry" << std::endl;
                     found_entry = &entry;
                     break;
+                }
+                else {
+                  // std::cout << entry.mPAddr << " " << entry.mPC << " " << entry.mPPN << " " << entry.mStride << " " << entry.mConfidence << " " << std::endl;
                 }
             }
             return found_entry;
@@ -161,7 +163,7 @@ class PerceptronBased
 
       PrefetcherWeightTable() {
         numFeatures = 7;
-        featureTables.reserve(numFeatures); // Using 8 features instead of 9 since prev 3 PCs not available
+        featureTables.resize(numFeatures); // Using 8 features instead of 9 since prev 3 PCs not available
 
         /**
          * featureTables[0] = Confidence XOR Page addr
@@ -176,16 +178,16 @@ class PerceptronBased
         // TODO: Reserve space for weights
         for (int i = 0; i < numFeatures; i++) {
           if (i < 4)
-            featureTables[i].weights.reserve(4096);
+            featureTables[i].weights.resize(4096, SatCounter(5, 1));
           else if (i == 4)
-            featureTables[i].weights.reserve(2048);
+            featureTables[i].weights.resize(2048, SatCounter(5, 1));
           else if (i == 5)
-            featureTables[i].weights.reserve(1024);
+            featureTables[i].weights.resize(1024, SatCounter(5, 1));
           else 
-            featureTables[i].weights.reserve(128);
+            featureTables[i].weights.resize(128, SatCounter(5, 1));
         
-          for(int j = 0; j < featureTables[i].weights.size(); j++) {
-            featureTables[i].weights[i] = SatCounter(5, 1);
+          for(int j = 0; j < featureTables[i].weights.size(); j+=2) {
+            featureTables[i].weights[i] = SatCounter(5, 0);
           }
         
         }
@@ -204,8 +206,21 @@ class PerceptronBased
     void getIndices(Addr addr, Addr pc, Addr ppn, stride_t stride, double confidence, signature_t sig, std::vector<int> &indices);
 
   public:
+    struct PrefetchFilterStats
+    {
+        PrefetchFilterStats();
+        // STATS
+        int numPrefetchAccepted;
+        int numPrefetchRejected;
+        int numWeightUpdationInvoked;
+    } statsPPF;
+
     PerceptronBased(const SignaturePathPrefetcherParams* p);
-    ~PerceptronBased() = default;
+    ~PerceptronBased()  {
+      std::cout << "Number of prefetches accepted: " << statsPPF.numPrefetchAccepted << std::endl;
+      std::cout << "Number of prefetches rejected: " << statsPPF.numPrefetchRejected << std::endl;
+      std::cout << "Number of time weight update is invoked: " << statsPPF.numWeightUpdationInvoked << std::endl;
+    }
 
     void setPageBytes(Addr pb) { pageBytes = pb; }
 

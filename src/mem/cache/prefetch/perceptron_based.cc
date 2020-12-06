@@ -31,6 +31,7 @@
 #include <cassert>
 #include <climits>
 
+// #include "base/logging.hh"
 #include "debug/HWPrefetch.hh"
 #include "mem/cache/prefetch/associative_set_impl.hh"
 #include "params/SignaturePathPrefetcherV2.hh"
@@ -71,6 +72,7 @@ void PerceptronBased::getIndices(Addr addr, Addr pc, Addr ppn, stride_t stride, 
         indices[4] = (int)confidence%2048;
         indices[5] = (sig ^ stride)%1024;
         indices[6] = (pc ^ stride)%128;
+        std::cout << indices[0] << " " << indices[1] << " " <<  indices[2] << " " << indices[3] << " " << indices[4] << " " << indices[5] << " " << indices[6] << " " << std::endl;
 }
 
 int PerceptronBased::computeWeightSum(Addr addr, Addr pc, Addr ppn, stride_t stride, double confidence, signature_t sig) {
@@ -86,16 +88,85 @@ int PerceptronBased::computeWeightSum(Addr addr, Addr pc, Addr ppn, stride_t str
 bool PerceptronBased::infer(Addr addr, Addr pc, Addr ppn, stride_t stride, double confidence, signature_t sig) {
         
         int result = computeWeightSum(addr, pc, ppn, stride, confidence, sig);
+        printf("Result: %d.\n", result);
         if (result >= threshold) {
-                PrefetchEntry *p = prefetchTable.findVictim(addr);
-                prefetchTable.insertEntry(addr, true, p);
+                // PrefetchEntry *p = prefetchTable.findVictim(addr);
+                // prefetchTable.insertEntry(addr, true, p);
+                printf("Passing the entry to prefetch queue %#x.\n", addr);
+                statsPPF.numPrefetchAccepted += 1;
+                PrefetchEntry* entry = prefetchTable.findEntry(addr, true);
+                if (entry != nullptr) {
+                        // Signature found
+                        entry->mPAddr = addr;
+                        entry->mConfidence = confidence;
+                        entry->mPC = pc;
+                        entry->mPPN = ppn;
+                        entry->mPAddr = addr;
+                        entry->mStride = stride;
+                        entry->mCurrentSignature = sig;
+
+                } else {
+                        // Signature not found
+                        entry = prefetchTable.findVictim(addr);
+                        assert(entry != nullptr);
+                        prefetchTable.insertEntry(addr, true, entry);
+
+                        PrefetchEntry* d_entry = prefetchTable.findEntry(addr, true);
+                        if (d_entry != nullptr) {
+                                // Signature found
+                                entry->mPAddr = addr;
+                                d_entry->mConfidence = confidence;
+                                d_entry->mPC = pc;
+                                d_entry->mPPN = ppn;
+                                d_entry->mPAddr = addr;
+                                d_entry->mStride = stride;
+                                d_entry->mCurrentSignature = sig;
+                        }
+                }
                 return true;
         }
         else {
-                RejectEntry *p = rejectTable.findVictim(addr);
-                rejectTable.insertEntry(addr, true, p);
+                // RejectEntry *p = rejectTable.findVictim(addr);
+                // rejectTable.insertEntry(addr, true, p);
+                printf("Rejecting this prefetch suggestion %#x.\n", addr);
+                statsPPF.numPrefetchRejected += 1;
+                RejectEntry* entry = rejectTable.findEntry(addr, true);
+                if (entry != nullptr) {
+                        // Signature found
+                        entry->mPAddr = addr;
+                        entry->mConfidence = confidence;
+                        entry->mPC = pc;
+                        entry->mPPN = ppn;
+                        entry->mPAddr = addr;
+                        entry->mStride = stride;
+                        entry->mCurrentSignature = sig;
+
+                } else {
+                        // Signature not found
+                        entry = rejectTable.findVictim(addr);
+                        assert(entry != nullptr);
+                        rejectTable.insertEntry(addr, true, entry);
+                        RejectEntry* d_entry = rejectTable.findEntry(addr, true);
+                        if (d_entry != nullptr) {
+                                // Signature found
+                                entry->mPAddr = addr;
+                                d_entry->mConfidence = confidence;
+                                d_entry->mPC = pc;
+                                d_entry->mPPN = ppn;
+                                d_entry->mPAddr = addr;
+                                d_entry->mStride = stride;
+                                d_entry->mCurrentSignature = sig;
+                        }
+                }
         }
         return false;
+}
+
+PerceptronBased::PrefetchFilterStats::PrefetchFilterStats() 
+{
+        numWeightUpdationInvoked = 0;
+        numPrefetchRejected = 0;
+        numPrefetchAccepted = 0;
 }
 
 void PerceptronBased::train(Addr addr, Addr pc, Addr ppn, stride_t stride, double confidence, signature_t sig, bool mode) {
@@ -110,6 +181,7 @@ void PerceptronBased::train(Addr addr, Addr pc, Addr ppn, stride_t stride, doubl
                                 ppf.featureTables[i].weights[indices[i]] += 1;
                         }
                         printf("Updating weights for address %#x.\n", addr);
+                        statsPPF.numWeightUpdationInvoked += 1;
                 }
         //else case: The address is requested and was prefetched! => No Weight updation
         // TODO: On eviction, check if the entry was in the prefetch table and update weights accordingly.

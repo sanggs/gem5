@@ -133,7 +133,7 @@ SignaturePath::addPrefetch(Addr ppn, stride_t last_block,
 
     bool result = true;
     if (enablePPF) {
-        perceptronFilter.infer(new_addr, pc, pf_ppn, delta, path_confidence, signature);
+        result = perceptronFilter.infer(new_addr, pc, pf_ppn, delta, path_confidence, signature);
     }
 
     if (result) {
@@ -243,7 +243,10 @@ SignaturePath::calculatePrefetch(const PrefetchInfo &pfi,
     stride_t stride;
     bool is_secure = pfi.isSecure();
     double initial_confidence = 1.0;
-    Addr pc = pfi.getPC();
+    Addr pc = 0;
+    if (pfi.hasPC()) {
+        pc = pfi.getPC();
+    }
 
 
     // Get the SignatureEntry of this page to:
@@ -260,9 +263,6 @@ SignaturePath::calculatePrefetch(const PrefetchInfo &pfi,
 
     if (stride == 0) {
         // Can't continue with a stride 0
-        if(enablePPF) {
-            perceptronFilter.train(request_addr, pfi.getPC(), ppn, stride, initial_confidence, signature_entry.signature);
-        }
         return;
     }
 

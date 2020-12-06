@@ -321,6 +321,7 @@ class Base : public ClockedObject
     {
         StatGroup(Stats::Group *parent);
         Stats::Scalar pfIssued;
+        Stats::Scalar usefulPrefetches;
     } prefetchStats;
 
     /** Total prefetches issued */

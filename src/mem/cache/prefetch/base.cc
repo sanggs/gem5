@@ -114,7 +114,8 @@ Base::setCache(BaseCache *_cache)
 }
 Base::StatGroup::StatGroup(Stats::Group *parent)
     : Stats::Group(parent),
-    ADD_STAT(pfIssued, "number of hwpf issued")
+    ADD_STAT(pfIssued, "number of hwpf issued"),
+    ADD_STAT(usefulPrefetches, "number of useful hwpf")
 {
 }
 
@@ -209,6 +210,7 @@ Base::probeNotify(const PacketPtr &pkt, bool miss)
 
     if (hasBeenPrefetched(pkt->getAddr(), pkt->isSecure())) {
         usefulPrefetches += 1;
+        prefetchStats.usefulPrefetches += 1;
     }
 
     // Verify this access type is observed by prefetcher

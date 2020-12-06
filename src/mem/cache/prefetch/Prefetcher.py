@@ -261,7 +261,7 @@ class SignaturePathPrefetcher(QueuedPrefetcher):
     lookahead_confidence_threshold = Param.Float(0.75,
         "Minimum confidence to continue exploring lookahead entries")
     
-    prefetch_filter_threshold = Param.Float(0.25,
+    prefetch_filter_threshold = Param.Float(11.0,
         "Threshold for prefetch filter");
 
     prefetch_table_entries = Param.MemorySize("1024",
