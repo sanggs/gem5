@@ -88,11 +88,9 @@ int PerceptronBased::computeWeightSum(Addr addr, Addr pc, Addr ppn, stride_t str
 bool PerceptronBased::infer(Addr addr, Addr pc, Addr ppn, stride_t stride, double confidence, signature_t sig) {
         
         int result = computeWeightSum(addr, pc, ppn, stride, confidence, sig);
-        printf("Result: %d.\n", result);
         if (result >= threshold) {
                 // PrefetchEntry *p = prefetchTable.findVictim(addr);
                 // prefetchTable.insertEntry(addr, true, p);
-                printf("Passing the entry to prefetch queue %#x.\n", addr);
                 statsPPF.numPrefetchAccepted += 1;
                 PrefetchEntry* entry = prefetchTable.findEntry(addr, true);
                 if (entry != nullptr) {
@@ -128,7 +126,6 @@ bool PerceptronBased::infer(Addr addr, Addr pc, Addr ppn, stride_t stride, doubl
         else {
                 // RejectEntry *p = rejectTable.findVictim(addr);
                 // rejectTable.insertEntry(addr, true, p);
-                printf("Rejecting this prefetch suggestion %#x.\n", addr);
                 statsPPF.numPrefetchRejected += 1;
                 RejectEntry* entry = rejectTable.findEntry(addr, true);
                 if (entry != nullptr) {
@@ -180,7 +177,6 @@ void PerceptronBased::train(Addr addr, Addr pc, Addr ppn, stride_t stride, doubl
                         for(int i = 0; i < ppf.numFeatures; i++) {
                                 ppf.featureTables[i].weights[indices[i]] += 1;
                         }
-                        printf("Updating weights for address %#x.\n", addr);
                         statsPPF.numWeightUpdationInvoked += 1;
                 }
         //else case: The address is requested and was prefetched! => No Weight updation

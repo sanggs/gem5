@@ -127,7 +127,6 @@ class PerceptronBased
     RejectEntry *findEntryInRejectTable(Addr addr, Addr pc, Addr ppn, stride_t stride, double confidence, signature_t sig)
         {
             RejectEntry *found_entry = nullptr;
-            std::cout << "Searching for : " << addr << " " << pc << " " << ppn << " " << stride << " " << confidence << " " << std::endl;
             found_entry = rejectTable.findEntry(addr, true);
             return found_entry;
         }
@@ -135,10 +134,8 @@ class PerceptronBased
     PrefetchEntry *findEntryInPrefetchTable(Addr addr, Addr pc, Addr ppn, stride_t stride, double confidence, signature_t sig)
         {
             PrefetchEntry *found_entry = nullptr;
-            std::cout << "Searching for : " << addr << " " << pc << " " << ppn << " " << stride << " " << confidence << " " << std::endl;
             for (auto &entry : prefetchTable) {
                 if (entry.mPAddr == addr && entry.mPC == pc && entry.mPPN==ppn && entry.mStride == stride && entry.mConfidence == confidence) {
-                    std::cout << "Found entry" << std::endl;
                     found_entry = &entry;
                     break;
                 }
@@ -216,11 +213,7 @@ class PerceptronBased
     } statsPPF;
 
     PerceptronBased(const SignaturePathPrefetcherParams* p);
-    ~PerceptronBased()  {
-      std::cout << "Number of prefetches accepted: " << statsPPF.numPrefetchAccepted << std::endl;
-      std::cout << "Number of prefetches rejected: " << statsPPF.numPrefetchRejected << std::endl;
-      std::cout << "Number of time weight update is invoked: " << statsPPF.numWeightUpdationInvoked << std::endl;
-    }
+    ~PerceptronBased()  {}
 
     void setPageBytes(Addr pb) { pageBytes = pb; }
 
