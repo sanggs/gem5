@@ -69,6 +69,9 @@ class SignaturePath : public Queued
     /** Minimum confidence to keep navigating lookahead entries */
     const double lookaheadConfidenceThreshold;
 
+    /** Flag to enable/disable the use of Perceptron-based prefetch filter */
+    bool enablePPF;
+    
     /** Signature entry data type */
     struct SignatureEntry : public TaggedEntry
     {

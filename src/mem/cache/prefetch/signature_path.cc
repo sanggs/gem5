@@ -51,6 +51,7 @@ SignaturePath::SignaturePath(const SignaturePathPrefetcherParams *p)
                    p->pattern_table_indexing_policy,
                    p->pattern_table_replacement_policy,
                    PatternEntry(stridesPerPatternEntry, p->num_counter_bits)),
+      enablePPF(p->enablePPF),
       perceptronFilter(p)
 {
     fatal_if(prefetchConfidenceThreshold < 0,
@@ -130,7 +131,12 @@ SignaturePath::addPrefetch(Addr ppn, stride_t last_block,
     Addr new_addr = pf_ppn * pageBytes;
     new_addr += pf_block * (Addr)blkSize;
 
-    if (perceptronFilter.infer(new_addr, pc, pf_ppn, delta, path_confidence, signature)) {
+    bool result = true;
+    if (enablePPF) {
+        perceptronFilter.infer(new_addr, pc, pf_ppn, delta, path_confidence, signature);
+    }
+
+    if (result) {
         DPRINTF(HWPrefetch, "Queuing prefetch to %#x.\n", new_addr);
         addresses.push_back(AddrPriority(new_addr, 0));
     }
@@ -239,9 +245,6 @@ SignaturePath::calculatePrefetch(const PrefetchInfo &pfi,
     double initial_confidence = 1.0;
     Addr pc = pfi.getPC();
 
-    if (hasBeenPrefetched(request_addr, is_secure)) {
-        DPRINTF(HWPrefetch, "This address has been prefetched");
-    }
 
     // Get the SignatureEntry of this page to:
     // - compute the current stride
@@ -257,7 +260,15 @@ SignaturePath::calculatePrefetch(const PrefetchInfo &pfi,
 
     if (stride == 0) {
         // Can't continue with a stride 0
+        if(enablePPF) {
+            perceptronFilter.train(request_addr, pfi.getPC(), ppn, stride, initial_confidence, signature_entry.signature);
+        }
         return;
+    }
+
+    if (enablePPF) {
+        DPRINTF(HWPrefetch, "Invoking PPF training");
+        perceptronFilter.train(request_addr, pfi.getPC(), ppn, stride, initial_confidence, signature_entry.signature);
     }
 
     // Update the confidence of the current signature

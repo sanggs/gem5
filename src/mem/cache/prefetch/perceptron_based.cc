@@ -60,9 +60,7 @@ PerceptronBased::PerceptronBased(const SignaturePathPrefetcherParams *p)
                     RejectEntry()),
         blkSize(p->block_size),
         pageBytes(0)
-        {
-                std::cout << "Initialised PPF " << std::endl;
-        }
+        {}
 
 void PerceptronBased::getIndices(Addr addr, Addr pc, Addr ppn, stride_t stride, double confidence, signature_t sig, std::vector<int> &indices) {
         indices.reserve(ppf.numFeatures);
@@ -102,7 +100,18 @@ bool PerceptronBased::infer(Addr addr, Addr pc, Addr ppn, stride_t stride, doubl
 
 void PerceptronBased::train(Addr addr, Addr pc, Addr ppn, stride_t stride, double confidence, signature_t sig) {
 
+        if (findEntryInRejectTable(addr, pc, ppn, stride, confidence, sig) != nullptr) {
+                // An entry that was requested is in the miss table
+                std::vector<int> indices;
+                getIndices(addr, pc, ppn, stride, confidence, sig, indices);
+                //PPF was less than the threshold. So add +1 to the weights
+                for(int i = 0; i < ppf.numFeatures; i++) {
+                        ppf.featureTables[i].weights[indices[i]] += 1;
+                }
+                printf("Updating weights for address %#x.\n", addr);
+        }
 
+        // TODO: On eviction, check if the entry was in the prefetch table and update weights accordingly.
 
 }
 

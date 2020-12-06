@@ -123,6 +123,30 @@ class PerceptronBased
     };
     AssociativeSet<RejectEntry> rejectTable;
 
+    RejectEntry *findEntryInRejectTable(Addr addr, Addr pc, Addr ppn, stride_t stride, double confidence, signature_t sig)
+        {
+            RejectEntry *found_entry = nullptr;
+            for (auto &entry : rejectTable) {
+                if (entry.mPAddr == addr && entry.mPC == pc && entry.mPPN==ppn && entry.mStride == stride && entry.mConfidence == confidence && entry.mCurrentSignature == sig) {
+                    found_entry = &entry;
+                    break;
+                }
+            }
+            return found_entry;
+        }
+
+    PrefetchEntry *findEntryInPrefetchTable(Addr addr, Addr pc, Addr ppn, stride_t stride, double confidence, signature_t sig)
+        {
+            PrefetchEntry *found_entry = nullptr;
+            for (auto &entry : prefetchTable) {
+                if (entry.mPAddr == addr && entry.mPC == pc && entry.mPPN==ppn && entry.mStride == stride && entry.mConfidence == confidence && entry.mCurrentSignature == sig) {
+                    found_entry = &entry;
+                    break;
+                }
+            }
+            return found_entry;
+        }
+
 
     struct FeatureWeights {
       std::vector<SatCounter> weights;
@@ -171,7 +195,7 @@ class PerceptronBased
     };
     PrefetcherWeightTable ppf;
 
-    const uint32_t threshold;
+    const float threshold;
     unsigned blkSize;
     Addr pageBytes;
 

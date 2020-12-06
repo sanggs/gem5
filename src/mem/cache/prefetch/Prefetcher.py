@@ -237,6 +237,9 @@ class SignaturePathPrefetcher(QueuedPrefetcher):
         "Indexing policy of the signature table")
     signature_table_replacement_policy = Param.BaseReplacementPolicy(LRURP(),
         "Replacement policy of the signature table")
+    
+    enablePPF = Param.Bool(True, 
+        "Flag to use Perceptron based prefetch filter")
 
     num_counter_bits = Param.UInt8(3,
         "Number of bits of the saturating counters")
@@ -258,7 +261,7 @@ class SignaturePathPrefetcher(QueuedPrefetcher):
     lookahead_confidence_threshold = Param.Float(0.75,
         "Minimum confidence to continue exploring lookahead entries")
     
-    prefetch_filter_threshold = Param.UInt16(25,
+    prefetch_filter_threshold = Param.Float(0.25,
         "Threshold for prefetch filter");
 
     prefetch_table_entries = Param.MemorySize("1024",
