@@ -267,8 +267,9 @@ SignaturePath::calculatePrefetch(const PrefetchInfo &pfi,
     }
 
     if (enablePPF) {
-        DPRINTF(HWPrefetch, "Invoking PPF training");
-        perceptronFilter.train(request_addr, pfi.getPC(), ppn, stride, initial_confidence, signature_entry.signature);
+        bool mode = hasBeenPrefetched(request_addr, is_secure);
+        DPRINTF(HWPrefetch, "Invoking PPF training\n");
+        perceptronFilter.train(request_addr, pfi.getPC(), ppn, stride, initial_confidence, signature_entry.signature, mode);
     }
 
     // Update the confidence of the current signature

@@ -98,19 +98,20 @@ bool PerceptronBased::infer(Addr addr, Addr pc, Addr ppn, stride_t stride, doubl
         return false;
 }
 
-void PerceptronBased::train(Addr addr, Addr pc, Addr ppn, stride_t stride, double confidence, signature_t sig) {
+void PerceptronBased::train(Addr addr, Addr pc, Addr ppn, stride_t stride, double confidence, signature_t sig, bool mode) {
 
-        if (findEntryInRejectTable(addr, pc, ppn, stride, confidence, sig) != nullptr) {
-                // An entry that was requested is in the miss table
-                std::vector<int> indices;
-                getIndices(addr, pc, ppn, stride, confidence, sig, indices);
-                //PPF was less than the threshold. So add +1 to the weights
-                for(int i = 0; i < ppf.numFeatures; i++) {
-                        ppf.featureTables[i].weights[indices[i]] += 1;
+        if (mode == false) //The address is requested, but was not prefetched
+                if (findEntryInRejectTable(addr, pc, ppn, stride, confidence, sig) != nullptr) {
+                        // An entry that was requested is in the miss table
+                        std::vector<int> indices;
+                        getIndices(addr, pc, ppn, stride, confidence, sig, indices);
+                        //PPF was less than the threshold. So add +1 to the weights
+                        for(int i = 0; i < ppf.numFeatures; i++) {
+                                ppf.featureTables[i].weights[indices[i]] += 1;
+                        }
+                        printf("Updating weights for address %#x.\n", addr);
                 }
-                printf("Updating weights for address %#x.\n", addr);
-        }
-
+        //else case: The address is requested and was prefetched! => No Weight updation
         // TODO: On eviction, check if the entry was in the prefetch table and update weights accordingly.
 
 }

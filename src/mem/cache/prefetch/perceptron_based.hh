@@ -211,7 +211,7 @@ class PerceptronBased
 
     bool infer(Addr addr, Addr pc, Addr ppn, stride_t stride, double confidence, signature_t sig);
 
-    void train(Addr addr, Addr pc, Addr ppn, stride_t stride, double confidence, signature_t sig);
+    void train(Addr addr, Addr pc, Addr ppn, stride_t stride, double confidence, signature_t sig, bool mode=false);
 
 };
 
